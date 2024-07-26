@@ -6,7 +6,6 @@ import shutil
 from collections import OrderedDict
 from contextlib import ExitStack
 from pathlib import Path
-from nemo.utils.exp_manager import TimingCallback
 from typing import TYPE_CHECKING, Any, ContextManager, Dict, List, Literal, Mapping, Optional, TypeVar, Union, cast
 
 import pytorch_lightning as pl
@@ -36,6 +35,7 @@ from nemo.lightning.io.pl import MegatronCheckpointIO
 from nemo.lightning.megatron_parallel import CallbackConnector, MegatronParallel, _ModuleStepFunction
 from nemo.lightning.pytorch.callbacks import MegatronProgressBar, ModelTransform
 from nemo.utils.callbacks.dist_ckpt_io import AsyncFinalizableCheckpointIO, AsyncFinalizerCallback
+from nemo.utils.exp_manager import TimingCallback
 
 if TYPE_CHECKING:
     from nemo.lightning.pytorch.plugins.data_sampler import DataSampler
