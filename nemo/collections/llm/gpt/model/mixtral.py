@@ -16,6 +16,39 @@ if TYPE_CHECKING:
     from nemo.collections.common.tokenizers.huggingface.auto_tokenizer import AutoTokenizer
     from nemo.collections.common.tokenizers.tokenizer_spec import TokenizerSpec
 
+@dataclass
+class MixtralConfig8x3B(GPTConfig):
+    """
+    NeMo's Mixtral-8x3B model variant
+    https://github.com/NVIDIA/NeMo-Framework-Launcher/blob/main/launcher_scripts/conf/training/mixtral/mixtral_8x3b.yaml
+    """
+
+    normalization: str = "RMSNorm"
+    activation_func: Callable = F.silu
+    position_embedding_type: str = "rope"
+    add_bias_linear: bool = False
+    gated_linear_unit: bool = True
+    apply_query_key_layer_scaling: bool = False  # TODO: Should this be True?
+
+    num_layers: int = 32
+    hidden_size: int = 2560
+    num_attention_heads: int = 32
+    num_query_groups: int = 8
+    ffn_hidden_size: int = 8960
+    max_position_embeddings: int = 4096  # 32768
+    seq_length: int = 4096  # 32768
+    # MoE
+    num_moe_experts: int = 8
+    moe_router_topk: int = 1
+
+    init_method_std: float = 0.02
+    layernorm_epsilon: float = 1e-5
+    # rotary
+    rotary_percent: float = 0.5
+    rotary_base: float = 10000
+    bf16: bool = True
+    params_dtype: torch.dtype = torch.bfloat16
+
 
 @dataclass
 class MixtralConfig8x7B(GPTConfig):
