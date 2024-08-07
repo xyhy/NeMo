@@ -77,6 +77,7 @@ class MixtralConfig8x3B(MixtralConfig):
     max_position_embeddings: int = 32768
     seq_length: int = 32768
 
+
 @dataclass
 class MixtralConfig8x22B(MixtralConfig):
     """
