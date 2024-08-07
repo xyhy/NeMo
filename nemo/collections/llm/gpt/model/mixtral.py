@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 import torch
 import torch.nn.functional as F
@@ -40,6 +40,7 @@ class MixtralConfig(GPTConfig):
     # MoE
     num_moe_experts: int = 8
     moe_router_topk: int = 1
+    moe_router_pre_softmax: bool = True
 
     init_method_std: float = 0.02
     layernorm_epsilon: float = 1e-5
@@ -47,10 +48,9 @@ class MixtralConfig(GPTConfig):
     rotary_percent: float = 0.5
     rotary_base: float = 10000
     bf16: bool = True
-    params_dtype: torch.dtype = torch.bfloat16
+    params_dtype: torch.dtype = torch.bfloat32
 
 
-@dataclass
 class MixtralConfig8x7B(MixtralConfig):
     """
     Config for Mixtral-8x7B model
@@ -77,11 +77,32 @@ class MixtralConfig8x3B(MixtralConfig):
     max_position_embeddings: int = 32768
     seq_length: int = 32768
 
+@dataclass
+class MixtralConfig8x22B(MixtralConfig):
+    """
+    Config for Mixtral-8x7B model
+    Official announcement: https://mistral.ai/news/mixtral-8x22b/
+    """
+
+    num_layers: int = 56
+    hidden_size: int = 6144
+    num_attention_heads: int = 48
+    ffn_hidden_size: int = 16384
+    max_position_embeddings: int = 65536
+    seq_length: int = 4096  # 65536
+    # MoE
+    num_moe_experts: int = 8
+    moe_router_topk: int = 2
+
+    # rotary
+    rotary_percent: float = 0  # TODO: @akoumparouli: is this correct?
+    rotary_base: float = 1000000
+
 
 class MixtralModel(GPTModel):
     def __init__(
         self,
-        config: Optional[MixtralConfig8x7B] = None,
+        config: Optional[Union[MixtralConfig8x7B, MixtralConfig8x22B]] = None,
         optim: Optional[OptimizerModule] = None,
         tokenizer: Optional["TokenizerSpec"] = None,
         model_transform: Optional[Callable[[nn.Module], nn.Module]] = None,
@@ -133,11 +154,14 @@ class HFMixtralImporter(io.ModelConnector["MixtralForCausalLM", MixtralModel]):
         return AutoTokenizer(str(self))
 
     @property
-    def config(self) -> MixtralConfig8x7B:
+    def config(self) -> MixtralConfig8x7B | MixtralConfig8x22B:
         from transformers import MixtralConfig as HfMixtralConfig
 
         config = HfMixtralConfig.from_pretrained(str(self))
-        return MixtralConfig8x7B(
+        config_cls = MixtralConfig8x7B
+        if '8x22b' in str(self).lower():
+            config_cls = MixtralConfig8x22B
+        return config_cls(
             bf16=getattr(config, "torch_dtype", None) == torch.bfloat16,
             activation_func=F.silu,
             # network
@@ -154,6 +178,7 @@ class HFMixtralImporter(io.ModelConnector["MixtralForCausalLM", MixtralModel]):
             num_query_groups=config.num_key_value_heads,
             num_moe_experts=config.num_local_experts,
             moe_router_topk=config.num_experts_per_tok,
+            moe_router_pre_softmax=True,
             # norm
             normalization='RMSNorm',
             layernorm_epsilon=config.rms_norm_eps,
@@ -266,7 +291,8 @@ class HFMixtralExporter(io.ModelConnector[MixtralModel, "MixtralForCausalLM"]):
 
     @property
     def config(self) -> "MixtralConfig":
-        source: MixtralConfig7B = io.load_ckpt(str(self)).model.config
+        # Either MixtralConfig8x7B or MixtralConfig8x22B
+        source: MixtralConfig8x7B = io.load_ckpt(str(self)).model.config
 
         from transformers import MixtralConfig as HfMixtralConfig
 
