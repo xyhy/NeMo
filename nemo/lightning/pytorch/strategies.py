@@ -217,8 +217,10 @@ class MegatronStrategy(DDPStrategy, io.IOMixin):
             self._mcore_config = _maybe_mcore_config
 
         has_optim = getattr(model, "optim", None)
+        self._opt_config = None
         if has_optim:
             opt_config = getattr(model.optim, "config", None)
+            self._opt_config = opt_config
             if isinstance(opt_config, OptimizerConfig):
                 mcore_opt_config: OptimizerConfig = cast(OptimizerConfig, opt_config)
                 if not self.ddp_config:
@@ -428,7 +430,8 @@ class MegatronStrategy(DDPStrategy, io.IOMixin):
         _strategy_lib.init_parallel_ranks(env.world_size(), env.global_rank(), env.local_rank(), self.parallelism)
 
     def _check_weight_parity(self):
-        has_dist_opt_with_ovelap = self.ddp_config.use_distributed_optimizer and self.ddp_config.overlap_param_gather
+        # @akoumparouli: maybe use a context manager here?
+        has_dist_opt_with_ovelap = self.ddp_config.use_distributed_optimizer and self._opt_config is not None and self._opt_config.overlap_param_gather
         if has_dist_opt_with_ovelap:
             for opt in self.optimizers:
                 opt.disable_pre_hook()
