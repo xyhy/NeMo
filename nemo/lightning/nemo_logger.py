@@ -32,6 +32,11 @@ class NeMoLogger(IOMixin):
         files_to_copy (Optional[List[str]]): List of files to copy to log directory.
         update_logger_directory (bool): Whether to update logger directory.
         ckpt (Optional[ModelCheckpoint]): Model checkpoint callback.
+        tensorboard: (Optional[TensorBoardLogger]): A PyTorch Lightning TensorBoardLogger instance
+            to add to the trainer.
+        wandb: Optional[WandbLogger] = A PyTorch Lightning WandBLogger instance
+            to add to the trainer.
+        extra_loggers(Optional[List[Logger]]): Any additional loggers to add to the trainer.
     """
 
     name: str = "default"
