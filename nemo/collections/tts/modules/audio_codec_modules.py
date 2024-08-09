@@ -419,7 +419,7 @@ class MultiBandDiscriminatorSTFT(NeuralModule):
         fmap_list = []
         spec = self.compute_stft(audio)
         for band, disc in zip(self.stft_bands, self.discriminators):
-            spec_band = spec[:, :, :, band[0]:band[1]]
+            spec_band = spec[:, :, :, band[0] : band[1]]
             score, fmap = disc(spec=spec_band)
             scores_list.append(score)
             fmap_list.append(fmap)
@@ -431,10 +431,9 @@ class MultiResolutionDiscriminatorSTFT(NeuralModule):
 
     def __init__(self, resolutions, stft_bands):
         super().__init__()
-        self.discriminators = nn.ModuleList([
-            MultiBandDiscriminatorSTFT(resolution=resolution, stft_bands=stft_bands)
-            for resolution in resolutions
-        ])
+        self.discriminators = nn.ModuleList(
+            [MultiBandDiscriminatorSTFT(resolution=resolution, stft_bands=stft_bands) for resolution in resolutions]
+        )
 
     @property
     def input_types(self):
@@ -1066,7 +1065,7 @@ class HiFiGANEncoder(NeuralModule):
                 out_channels=out_channels,
                 kernel_size=kernel_size,
                 stride=down_sample_rate,
-                padding=padding
+                padding=padding,
             )
             in_channels = out_channels
             self.down_sample_conv_layers.append(down_sample_conv)
@@ -1154,7 +1153,7 @@ class HiFiGANDecoder(NeuralModule):
         resblock_kernel_sizes: Iterable[int] = (3, 7, 11),
         resblock_dilation_sizes: Iterable[int] = (1, 3, 5),
         activation: str = "lrelu",
-        output_activation: str = "tanh"
+        output_activation: str = "tanh",
     ):
         assert in_kernel_size > 0
         assert out_kernel_size > 0
