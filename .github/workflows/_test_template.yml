@@ -43,6 +43,7 @@ jobs:
 
   main:
     runs-on: ${{ inputs.RUNNER }} 
+    needs: [runner-auto-clean]
     outputs:
       conclusion: ${{ steps.main.conclusion }}
       log: ${{ steps.main.outputs.log }}
